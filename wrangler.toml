@@ -1,0 +1,25 @@
+name = "quilt-elf"
+main = "src/worker.ts"
+compatibility_date = "2024-01-01"
+
+# Cron trigger — every 15 minutes
+[triggers]
+crons = ["*/15 * * * *"]
+
+# KV for usage storage
+[[kv_namespaces]]
+binding = "USAGE_KV"
+id = "your-kv-namespace-id"
+
+# Environment variables (set in Cloudflare dashboard or wrangler secret)
+[vars]
+# ZAI_TOKEN = "..."
+# KIMI_TOKEN = "..."
+# DEEPSEEK_TOKEN = "..."
+# CLOUDFLARE_ACCOUNT_ID = "..."
+# CLOUDFLARE_API_TOKEN = "..."
+
+# Production config
+[env.production]
+name = "quilt-elf-prod"
+route = { pattern = "elf.superinstance.dev/*", zone_name = "superinstance.dev" }
