@@ -157,6 +157,59 @@ export class ContextManager {
     return utcHour >= 22 || utcHour === 0;
   }
 
+  /**
+   * Compute a 'vibe score' that quantifies how aggressive the system
+   * should be in spending free tokens.
+   *
+   * Per Kimi's recommendation (moonshot-v1-8k):
+   *   score = 0.4 * time_factor + 0.3 * user_factor + 0.2 * backlog_factor + 0.1 * token_factor
+   *
+   * Each factor is 0-1. The score is 0-1. Higher = more aggressive.
+   */
+  async computeVibeScore(opts: {
+    backlogSize?: number;
+    freeTokensRemaining?: number;
+    maxFreeTokens?: number;
+  } = {}): Promise<number> {
+    const time = this.timeFactor();
+    const user = await this.userFactor();
+    const backlog = this.backlogFactor(opts.backlogSize ?? 0);
+    const tokens = this.tokenFactor(opts.freeTokensRemaining ?? 0, opts.maxFreeTokens ?? 1);
+    return 0.4 * time + 0.3 * user + 0.2 * backlog + 0.1 * tokens;
+  }
+
+  /** Time factor: 1 at 22:00 UTC, 0 at 00:00 UTC. */
+  private timeFactor(): number {
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    const utcMin = now.getUTCMinutes();
+    const minutesSinceFlushStart = (utcHour - 22 + 24) % 24 * 60 + utcMin;
+    const flushWindowMinutes = 2 * 60;  // 2 hours
+    if (minutesSinceFlushStart > flushWindowMinutes) return 0;
+    return 1 - minutesSinceFlushStart / flushWindowMinutes;
+  }
+
+  /** User factor: 1 when idle, 0 when active. */
+  private async userFactor(): Promise<number> {
+    if (!this.activityTracker) return 0.5;  // unknown → moderate
+    const idleSec = await this.activityTracker.secondsSinceLastAction();
+    if (idleSec > 600) return 1.0;
+    if (idleSec > 60) return 0.5;
+    if (idleSec > 30) return 0.2;
+    return 0;
+  }
+
+  /** Backlog factor: scales with backlog size. */
+  private backlogFactor(size: number): number {
+    return Math.min(1, size / 50);
+  }
+
+  /** Token factor: 1 when tokens are fresh, 0 when exhausted. */
+  private tokenFactor(remaining: number, max: number): number {
+    if (max <= 0) return 0;
+    return Math.min(1, remaining / max);
+  }
+
   /** Manually set the vibe. */
   setVibe(vibe: Vibe): void {
     if (vibe !== this.currentVibe) {
