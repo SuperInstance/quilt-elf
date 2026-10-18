@@ -1,5 +1,5 @@
 /**
- * Tests for @quilt/elf
+ * Tests for @superinstance/quilt-elf
  *
  * The 5 components: ContextManager, ResourceTracker, Backlog, Dispatcher, AuditLoop.
  * Plus the top-level Elf orchestrator.

@@ -1,5 +1,5 @@
 /**
- * @quilt/elf — invisible elves doing background housekeeping.
+ * @superinstance/quilt-elf — invisible elves doing background housekeeping.
  *
  * 5 components:
  *   1. ContextManager   — the brain, tracks user activity + vibe
